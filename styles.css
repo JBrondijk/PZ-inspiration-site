@@ -176,6 +176,20 @@ main { width: min(760px, 100%); }
   outline-offset: 2px;
 }
 
+/* Subtle disclaimer about local caching to reduce API requests */
+.cache-disclaimer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.176);
+  opacity: 0.95;
+  z-index: 30;
+  pointer-events: none;
+}
+
 button#shuffle {
   display: inline-flex;
   align-items: center;
