@@ -13,7 +13,12 @@
   'use strict';
 
   // --- Constants -----------------------------------------------------------
-  var PLAYLIST_ID = 'PL6W47aln8JRfkyR_Bf19Nt63DElvTkB11';
+  var PLAYLISTS = {
+    all: 'PL6W47aln8JRfkyR_Bf19Nt63DElvTkB11',
+    pz1: 'PL6W47aln8JRfFKSliFezfztzIV37IYZX2',
+    pz2: 'PL6W47aln8JReWv9CKD5OjmBu1-bvAR8sK'
+  };
+  var selectedPlaylist = 'all';
   var API_BASE = 'https://www.googleapis.com/youtube/v3';
   var CACHE_KEY = 'ytrand:dataset:v1';
   var TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -36,12 +41,19 @@
   var lastAutoplay = false;    // autoplay intent of the current selection
 
   // --- DOM -----------------------------------------------------------------
-  var statusEl, headlineEl, shuffleBtn;
+  var statusEl, headlineEl, shuffleBtn, playlistToggleButtons, forceRefreshQuery = false;
 
   function cacheDom() {
     statusEl = document.getElementById('status');
     headlineEl = document.getElementById('headline');
     shuffleBtn = document.getElementById('shuffle');
+    playlistToggleButtons = document.querySelectorAll('[data-playlist]');
+
+    playlistToggleButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        setPlaylist(button.dataset.playlist);
+      });
+    });
   }
 
   function setStatus(msg, cls) {
@@ -117,7 +129,7 @@
   function fetchPlaylistVideoIds() {
     var ids = [];
     function page(pageToken) {
-      var params = { part: 'contentDetails', playlistId: PLAYLIST_ID, maxResults: '50' };
+      var params = { part: 'contentDetails', playlistId: currentPlaylistId(), maxResults: '50' };
       if (pageToken) params.pageToken = pageToken;
       return apiGet('/playlistItems', params).then(function (data) {
         (data.items || []).forEach(function (item) {
@@ -166,7 +178,7 @@
   // --- Cache ---------------------------------------------------------------
   function loadCache() {
     try {
-      var raw = localStorage.getItem(CACHE_KEY);
+      var raw = localStorage.getItem(getCacheKey());
       if (!raw) return null;
       var obj = JSON.parse(raw);
       if (!obj || !obj.builtAt || !Array.isArray(obj.data)) return null;
@@ -177,7 +189,7 @@
 
   function saveCache(data) {
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ builtAt: Date.now(), data: data }));
+      localStorage.setItem(getCacheKey(), JSON.stringify({ builtAt: Date.now(), data: data }));
     } catch (e) { /* storage full/blocked — fine, just skip caching */ }
   }
 
@@ -187,6 +199,57 @@
       if (cached) return Promise.resolve(cached);
     }
     return buildDataset().then(function (data) { saveCache(data); return data; });
+  }
+
+  function currentPlaylistId() {
+    return PLAYLISTS[selectedPlaylist];
+  }
+
+  function getCacheKey() {
+    return CACHE_KEY + ':' + selectedPlaylist;
+  }
+
+  function setPlaylistButtons() {
+    playlistToggleButtons.forEach(function (button) {
+      var active = button.dataset.playlist === selectedPlaylist;
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function setPlaylist(playlistKey) {
+    if (!PLAYLISTS.hasOwnProperty(playlistKey) || playlistKey === selectedPlaylist) return;
+    selectedPlaylist = playlistKey;
+    setPlaylistButtons();
+  }
+
+  function loadPlaylist() {
+    setStatus('Loading playlist…', 'loading');
+    shuffleBtn.disabled = true;
+    pool = [];
+    current = null;
+    setPlaylistButtons();
+
+    getDataset(forceRefreshQuery).then(function (data) {
+      pool = data || [];
+      if (pool.length === 0) {
+        setStatus('No videos in this playlist have usable (non-intro/outro) timestamps.', 'error');
+        return;
+      }
+      clearStatus();
+      shuffleBtn.disabled = false;
+      if (!apiReady) loadIframeApi();
+      applySelection(chooseSelection(null), false);
+    }).catch(function (e) {
+      if (e.status === 400 || e.status === 403) {
+        setStatus('YouTube API request rejected (' + e.status +
+          (e.reason ? ' · ' + e.reason : '') + '). Check that config.js has a ' +
+          'valid YouTube Data API v3 key, that the API is enabled, that the ' +
+          'key\'s HTTP-referrer restriction allows this origin, and that you ' +
+          'are within quota.', 'error');
+      } else {
+        setStatus('Failed to load playlist data: ' + e.message, 'error');
+      }
+    });
   }
 
   // --- Selection + player --------------------------------------------------
@@ -300,32 +363,9 @@
       return;
     }
 
-    setStatus('Loading playlist…', 'loading');
-    var forceRefresh = new URLSearchParams(location.search).get('refresh') === '1';
-
-    getDataset(forceRefresh).then(function (data) {
-      pool = data || [];
-      if (pool.length === 0) {
-        setStatus('No videos in this playlist have usable (non-intro/outro) timestamps.', 'error');
-        return;
-      }
-      clearStatus();
-      shuffleBtn.disabled = false;
-      loadIframeApi();
-      applySelection(chooseSelection(null), false); // page load: paused
-    }).catch(function (e) {
-      if (e.status === 400 || e.status === 403) {
-        // 400 badRequest is usually a malformed/invalid key; 403 is a
-        // disabled API, referrer mismatch, or exhausted quota.
-        setStatus('YouTube API request rejected (' + e.status +
-          (e.reason ? ' · ' + e.reason : '') + '). Check that config.js has a ' +
-          'valid YouTube Data API v3 key, that the API is enabled, that the ' +
-          'key\'s HTTP-referrer restriction allows this origin, and that you ' +
-          'are within quota.', 'error');
-      } else {
-        setStatus('Failed to load playlist data: ' + e.message, 'error');
-      }
-    });
+    forceRefreshQuery = new URLSearchParams(location.search).get('refresh') === '1';
+    setPlaylistButtons();
+    loadPlaylist();
   }
 
   if (document.readyState === 'loading') {

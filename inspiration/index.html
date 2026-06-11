@@ -29,8 +29,17 @@
         <h1 id="headline" aria-live="polite">Feeling stuck?</h1>
         <p id="status" class="loading" aria-live="polite">Loading…</p>
         <div id="player" class="player-box"><div id="player-mount"></div></div>
-        <div class="actions">
-          <button id="shuffle" type="button" disabled>show me something else</button>
+        <div class="panel__controls">
+          <div class="playlist-toggle">
+            <div class="playlist-toggle__group" role="radiogroup" aria-label="Choose playlist">
+              <button type="button" class="playlist-toggle__option" data-playlist="all" aria-pressed="true">All</button>
+              <button type="button" class="playlist-toggle__option" data-playlist="pz1" aria-pressed="false">Planet Zoo 1</button>
+              <button type="button" class="playlist-toggle__option" data-playlist="pz2" aria-pressed="false">Planet Zoo 2</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="shuffle" type="button" disabled>show me something else</button>
+          </div>
         </div>
       </div>
     </section>

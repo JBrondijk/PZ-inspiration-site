@@ -115,7 +115,66 @@ main { width: min(760px, 100%); }
 }
 
 /* Primary action — Planet Zoo green pill */
-.actions { display: flex; justify-content: center; }
+.panel__controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.actions { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+
+.playlist-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.playlist-toggle__label {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pz-ink-soft);
+}
+
+.playlist-toggle__group {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: rgba(31, 158, 106, 0.1);
+}
+
+.playlist-toggle__option {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--pz-green-deep);
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.05s ease, filter 0.15s ease, background-color 0.15s ease;
+}
+
+.playlist-toggle__option:hover {
+  filter: brightness(1.05);
+}
+
+.playlist-toggle__option[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(180deg, var(--pz-green-bright), var(--pz-green));
+  box-shadow: 0 6px 14px rgba(20, 120, 80, 0.25);
+}
+
+.playlist-toggle__option:focus-visible {
+  outline: 3px solid rgba(115, 210, 154, 0.55);
+  outline-offset: 2px;
+}
 
 button#shuffle {
   display: inline-flex;
