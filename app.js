@@ -220,6 +220,7 @@
     if (!PLAYLISTS.hasOwnProperty(playlistKey) || playlistKey === selectedPlaylist) return;
     selectedPlaylist = playlistKey;
     setPlaylistButtons();
+    loadPlaylist();
   }
 
   function loadPlaylist() {
